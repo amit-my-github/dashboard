@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Master Branch Push — Checklist Reminder</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111a2e;
+      --text: #e7eefc;
+      --muted: #a9b7d6;
+      --accent: #7aa2ff;
+      --ok: #25c2a0;
+      --warn: #ffcc66;
+      --danger: #ff6b6b;
+      --border: rgba(255,255,255,.10);
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(122,162,255,.20), transparent 60%),
+                  radial-gradient(1200px 600px at 80% 10%, rgba(37,194,160,.14), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.35;
+    }
+    header {
+      padding: 28px 18px 10px;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    p { margin: 0; color: var(--muted); }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 18px 40px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 14px 0 18px;
+    }
+    button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { border-color: rgba(255,255,255,.22); }
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    details {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: clip;
+    }
+    summary {
+      list-style: none;
+      padding: 14px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    summary::-webkit-details-marker { display:none; }
+
+    .toc-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .toc-title strong {
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toc-title small { color: var(--muted); }
+    .toc-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .progress {
+      width: 190px;
+      height: 8px;
+      background: rgba(255,255,255,.08);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--ok));
+    }
+    .count {
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      min-width: 64px;
+      text-align: right;
+    }
+
+    .children {
+      padding: 0 14px 14px;
+      border-top: 1px solid var(--border);
+    }
+    ul { margin: 12px 0 0; padding: 0; }
+    li {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      padding: 10px 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    label { cursor: pointer; }
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+    }
+    .tag.warn { border-color: rgba(255,204,102,.35); color: #ffd98e; }
+    .tag.danger { border-color: rgba(255,107,107,.35); color: #ffb1b1; }
+    .tag.ok { border-color: rgba(37,194,160,.35); color: #92f1de; }
+
+    .note {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.18);
+      color: var(--muted);
+      background: rgba(255,255,255,.03);
+    }
+    .note code { color: var(--text); }
+    .footer {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .dim { opacity: .85; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Master Branch Push — Checklist Reminder</h1>
+    <p>Use this before pushing to <strong>master</strong>. Your checks are grouped as Parent (TOC) with Child reminders. Progress is saved in your browser.</p>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <button id="expandAll" type="button">Expand all</button>
+      <button id="collapseAll" type="button">Collapse all</button>
+      <button id="checkAllOpen" type="button">Check all (open sections)</button>
+      <button id="reset" type="button">Reset all</button>
+      <span class="pill" id="overall">Overall: 0 / 0</span>
+    </div>
+
+    <section class="grid" id="checklist">
+
+      <!-- 1) Code Quality -->
+      <details class="toc" open data-key="code_quality">
+        <summary>
+          <span class="toc-title">
+            <strong>1) Code Quality</strong>
+            <small>Linting, readability, security basics</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="cq_1" />
+              <label>
+                Run linter/formatter and fix violations (no warnings ignored).
+                <div class="meta">
+                  <span class="tag ok">Quality</span>
+                  <span class="tag">lint/format</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cq_2" />
+              <label>
+                Remove unused code, debug logs, TODOs that are not tracked.
+                <div class="meta">
+                  <span class="tag ok">Quality</span>
+                  <span class="tag warn">cleanup</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cq_3" />
+              <label>
+                Verify error handling + user-facing messages are clear (no silent failures).
+                <div class="meta">
+                  <span class="tag ok">Quality</span>
+                  <span class="tag">errors</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cq_4" />
+              <label>
+                Quick security pass: secrets not committed, inputs validated/sanitized where needed.
+                <div class="meta">
+                  <span class="tag danger">Security</span>
+                  <span class="tag">secrets</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 2) Configuration -->
+      <details class="toc" data-key="configuration">
+        <summary>
+          <span class="toc-title">
+            <strong>2) Configuration</strong>
+            <small>Env vars, configs, deployment readiness</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="cfg_1" />
+              <label>
+                Config values are correct for target environment(s) (dev/test/prod).
+                <div class="meta">
+                  <span class="tag">config</span>
+                  <span class="tag warn">env</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cfg_2" />
+              <label>
+                No secrets in code; secrets stored in approved secret store (Key Vault / secrets manager).
+                <div class="meta">
+                  <span class="tag danger">Security</span>
+                  <span class="tag">secrets</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cfg_3" />
+              <label>
+                Versioning/build numbers updated if required (package/app version).
+                <div class="meta">
+                  <span class="tag">release</span>
+                  <span class="tag">versioning</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cfg_4" />
+              <label>
+                Feature flags default states confirmed; safe rollout plan defined if needed.
+                <div class="meta">
+                  <span class="tag warn">risk</span>
+                  <span class="tag">flags</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 3) Unit Tests -->
+      <details class="toc" data-key="unit_tests">
+        <summary>
+          <span class="toc-title">
+            <strong>3) Unit Tests</strong>
+            <small>Automated tests for new/changed logic</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="ut_1" />
+              <label>
+                Add/Update unit tests for all new behaviors and bug fixes.
+                <div class="meta">
+                  <span class="tag">tests</span>
+                  <span class="tag ok">unit</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="ut_2" />
+              <label>
+                Ensure tests are deterministic (no time/network/flaky dependencies).
+                <div class="meta">
+                  <span class="tag warn">flaky</span>
+                  <span class="tag">stability</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="ut_3" />
+              <label>
+                Run unit tests locally and confirm green.
+                <div class="meta">
+                  <span class="tag">local</span>
+                  <span class="tag ok">pass</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 4) Code Coverage -->
+      <details class="toc" data-key="coverage">
+        <summary>
+          <span class="toc-title">
+            <strong>4) Code Coverage</strong>
+            <small>Coverage checks + gaps reviewed</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="cc_1" />
+              <label>
+                Generate coverage report and confirm threshold meets team standard.
+                <div class="meta">
+                  <span class="tag">coverage</span>
+                  <span class="tag warn">threshold</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="cc_2" />
+              <label>
+                Review uncovered critical paths (error handling, boundary cases) and add tests if needed.
+                <div class="meta">
+                  <span class="tag">coverage</span>
+                  <span class="tag">risk</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 5) GitHub PR format -->
+      <details class="toc" data-key="github_pr">
+        <summary>
+          <span class="toc-title">
+            <strong>5) GitHub PR Format</strong>
+            <small>Template, description, links, reviewers</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="pr_1" />
+              <label>
+                PR title follows team convention (scope + intent). Description is complete.
+                <div class="meta">
+                  <span class="tag">PR</span>
+                  <span class="tag">format</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="pr_2" />
+              <label>
+                Link work items (ADO/Jira/etc.) and include screenshots/logs if relevant.
+                <div class="meta">
+                  <span class="tag">traceability</span>
+                  <span class="tag">evidence</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="pr_3" />
+              <label>
+                Add reviewers/approvers; request review from required owners.
+                <div class="meta">
+                  <span class="tag">review</span>
+                  <span class="tag warn">owners</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="pr_4" />
+              <label>
+                Confirm PR checks: CI build, lint, tests, security scans all passing.
+                <div class="meta">
+                  <span class="tag ok">CI</span>
+                  <span class="tag danger">gates</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 6) Testing -->
+      <details class="toc" data-key="testing">
+        <summary>
+          <span class="toc-title">
+            <strong>6) Testing</strong>
+            <small>Manual/Integration/Regression as needed</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="tst_1" />
+              <label>
+                Smoke test key flows locally or in test environment (happy path + common edge cases).
+                <div class="meta">
+                  <span class="tag">manual</span>
+                  <span class="tag warn">smoke</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="tst_2" />
+              <label>
+                Integration/E2E tests executed (or explicitly not needed with rationale).
+                <div class="meta">
+                  <span class="tag">integration</span>
+                  <span class="tag">E2E</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="tst_3" />
+              <label>
+                Regression risk reviewed (what could break?) and validated.
+                <div class="meta">
+                  <span class="tag warn">risk</span>
+                  <span class="tag">regression</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 7) Acceptance Criteria -->
+      <details class="toc" data-key="acceptance_criteria">
+        <summary>
+          <span class="toc-title">
+            <strong>7) Acceptance Criteria</strong>
+            <small>Ensure story/task is truly "done"</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="ac_1" />
+              <label>
+                Each Acceptance Criterion is explicitly met and verifiable.
+                <div class="meta">
+                  <span class="tag">AC</span>
+                  <span class="tag ok">done</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="ac_2" />
+              <label>
+                Add evidence: screenshots, logs, test results, or steps to reproduce.
+                <div class="meta">
+                  <span class="tag">evidence</span>
+                  <span class="tag">QA</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="ac_3" />
+              <label>
+                Non-functional checks considered (performance, accessibility, localization if applicable).
+                <div class="meta">
+                  <span class="tag warn">NFR</span>
+                  <span class="tag">quality</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 8) Communicate in Teams (your "Intemate" item) -->
+      <details class="toc" data-key="teams">
+        <summary>
+          <span class="toc-title">
+            <strong>8) Communicate in Teams group</strong>
+            <small>Notify stakeholders + handoff info</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="tm_1" />
+              <label>
+                Post summary: what changed, why, and impact/risk.
+                <div class="meta">
+                  <span class="tag">Teams</span>
+                  <span class="tag">summary</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="tm_2" />
+              <label>
+                Share test status and environment tested (local/dev/test/prod-like).
+                <div class="meta">
+                  <span class="tag">Teams</span>
+                  <span class="tag">testing</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="tm_3" />
+              <label>
+                Mention owners/reviewers and any rollout/feature flag instructions.
+                <div class="meta">
+                  <span class="tag warn">handoff</span>
+                  <span class="tag">owners</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 9) Azure DevOps (ADO) comments -->
+      <details class="toc" data-key="ado">
+        <summary>
+          <span class="toc-title">
+            <strong>9) ADO (Azure DevOps) Updates</strong>
+            <small>Comment, link PR, update status</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="ado_1" />
+              <label>
+                Add comment: summary, testing performed, and any known limitations.
+                <div class="meta">
+                  <span class="tag">ADO</span>
+                  <span class="tag">comment</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="ado_2" />
+              <label>
+                Link PR/commit(s) to the work item and move to correct state (Ready for QA/Done/etc.).
+                <div class="meta">
+                  <span class="tag">ADO</span>
+                  <span class="tag">traceability</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="ado_3" />
+              <label>
+                Attach evidence (screenshots/logs) and note AC coverage.
+                <div class="meta">
+                  <span class="tag">ADO</span>
+                  <span class="tag">evidence</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- 10) Final gate: push/merge to master -->
+      <details class="toc" data-key="final_gate">
+        <summary>
+          <span class="toc-title">
+            <strong>10) Final Gate (before master)</strong>
+            <small>Last checks before merge/push</small>
+          </span>
+          <span class="toc-right">
+            <span class="progress" aria-hidden="true"><span class="bar"></span></span>
+            <span class="count">0/0</span>
+          </span>
+        </summary>
+        <div class="children">
+          <ul>
+            <li>
+              <input type="checkbox" data-id="fg_1" />
+              <label>
+                Branch is up to date with master (rebase/merge) and conflicts resolved cleanly.
+                <div class="meta">
+                  <span class="tag warn">risk</span>
+                  <span class="tag">branch</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="fg_2" />
+              <label>
+                All required approvals obtained; policies satisfied (build gates, checks, etc.).
+                <div class="meta">
+                  <span class="tag danger">policy</span>
+                  <span class="tag">approvals</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="fg_3" />
+              <label>
+                Final sanity check: run app/service and verify critical flow once more.
+                <div class="meta">
+                  <span class="tag">sanity</span>
+                  <span class="tag ok">final</span>
+                </div>
+              </label>
+            </li>
+            <li>
+              <input type="checkbox" data-id="fg_4" />
+              <label>
+                Merge / push to master (per team process) and confirm CI on master is green.
+                <div class="meta">
+                  <span class="tag danger">master</span>
+                  <span class="tag">CI</span>
+                </div>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </details>
+
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "master_push_checklist_v1";
+
+    const checklist = document.getElementById("checklist");
+    const overall = document.getElementById("overall");
+    const expandAll = document.getElementById("expandAll");
+    const collapseAll = document.getElementById("collapseAll");
+    const checkAllOpen = document.getElementById("checkAllOpen");
+    const reset = document.getElementById("reset");
+
+    function getAllCheckboxes(root = document) {
+      return Array.from(root.querySelectorAll('input[type="checkbox"][data-id]'));
+    }
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function applyState() {
+      const state = loadState();
+      for (const cb of getAllCheckboxes()) {
+        cb.checked = !!state[cb.dataset.id];
+      }
+    }
+
+    function updateSectionProgress(detailsEl) {
+      const boxes = getAllCheckboxes(detailsEl);
+      const done = boxes.filter(b => b.checked).length;
+      const total = boxes.length;
+
+      const countEl = detailsEl.querySelector(".count");
+      const barEl = detailsEl.querySelector(".bar");
+
+      if (countEl) countEl.textContent = `${done}/${total}`;
+      if (barEl) barEl.style.width = total ? `${Math.round((done / total) * 100)}%` : "0%";
+    }
+
+    function updateOverallProgress() {
+      const boxes = getAllCheckboxes(checklist);
+      const done = boxes.filter(b => b.checked).length;
+      const total = boxes.length;
+      overall.textContent = `Overall: ${done} / ${total}`;
+    }
+
+    function updateAllProgress() {
+      document.querySelectorAll("details.toc").forEach(updateSectionProgress);
+      updateOverallProgress();
+    }
+
+    function wireEvents() {
+      checklist.addEventListener("change", (e) => {
+        const t = e.target;
+        if (t && t.matches('input[type="checkbox"][data-id]')) {
+          const state = loadState();
+          state[t.dataset.id] = t.checked;
+          saveState(state);
+
+          const detailsEl = t.closest("details.toc");
+          if (detailsEl) updateSectionProgress(detailsEl);
+          updateOverallProgress();
+        }
+      });
+
+      expandAll.addEventListener("click", () => {
+        document.querySelectorAll("details.toc").forEach(d => d.open = true);
+      });
+
+      collapseAll.addEventListener("click", () => {
+        document.querySelectorAll("details.toc").forEach(d => d.open = false);
+      });
+
+      checkAllOpen.addEventListener("click", () => {
+        const openDetails = Array.from(document.querySelectorAll("details.toc")).filter(d => d.open);
+        const state = loadState();
+        for (const d of openDetails) {
+          for (const cb of getAllCheckboxes(d)) {
+            cb.checked = true;
+            state[cb.dataset.id] = true;
+          }
+          updateSectionProgress(d);
+        }
+        saveState(state);
+        updateOverallProgress();
+      });
+
+      reset.addEventListener("click", () => {
+        if (!confirm("Reset ALL checklist items?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        applyState();
+        updateAllProgress();
+      });
+    }
+
+    // init
+    applyState();
+    wireEvents();
+    updateAllProgress();
+  </script>
+</body>
+</html>

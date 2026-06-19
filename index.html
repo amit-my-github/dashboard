@@ -1,0 +1,252 @@
+<!doctype html>  
+<html lang="en">  
+<head>  
+  <meta charset="utf-8" />  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />  
+  <title>Local Dev Reminder & Status</title>
+
+  <!-- jQuery (CDN) -->  
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"  
+          integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="  
+          crossorigin="anonymous"></script>
+
+  <style>  
+    body { font-family: Arial, sans-serif; margin: 20px; background:#fafafa; }  
+    .topbar { display:flex; justify-content: space-between; align-items:center; gap:12px; margin-bottom: 12px; }  
+    .title { font-size: 18px; font-weight: 700; }  
+    .right { display:flex; gap:8px; align-items:center; }  
+    button { padding:8px 12px; cursor:pointer; }  
+    .grid { width:100%; border-collapse: collapse; background:#fff; }  
+    .grid th, .grid td { border:1px solid #ddd; padding:10px; vertical-align: middle; }  
+    .grid th { background:#f3f3f3; text-align:left; }  
+    .col-check { width:60px; text-align:center; }  
+    .col-status { width:180px; }  
+    input[type="text"] { width:100%; padding:7px 8px; box-sizing:border-box; }  
+    select { width:100%; padding:7px 8px; box-sizing:border-box; }
+
+    .layout { display:grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; }  
+    .card { background:#fff; border:1px solid #ddd; padding:12px; }  
+    .card h3 { margin:0 0 10px; font-size: 15px; }  
+    .links a { display:inline-block; margin: 4px 8px 4px 0; }  
+    .meta { color:#555; font-size:13px; margin-top:10px; }  
+    .badge { display:inline-block; padding:2px 8px; border-radius: 10px; border:1px solid #ccc; font-size: 12px; background:#fff; }  
+    .ok { border-color:#3a7; color:#185; }  
+    .warn { border-color:#e9a; color:#a35; }  
+  </style>  
+</head>  
+<body>
+
+  <div class="topbar">  
+    <div class="title">Local Dev Reminder & Status</div>  
+    <div class="right">  
+      <span class="badge" id="lastSaved">Last saved: —</span>  
+      <button id="btnReset" type="button">Reset</button>  
+      <button id="btnRefresh" type="button">Refresh</button>  
+    </div>  
+  </div>
+
+  <div class="layout">  
+    <!-- LEFT: Reminder grid -->  
+    <div class="card">  
+      <h3>Configuration Reminders (local)</h3>  
+      <table class="grid" id="reminderGrid">  
+        <thead>  
+          <tr>  
+            <th class="col-check">✔</th>  
+            <th>Title</th>  
+            <th>Remark</th>  
+            <th class="col-status">Status</th>  
+          </tr>  
+        </thead>  
+        <tbody></tbody>  
+      </table>
+
+      <div class="meta">  
+        Reminders: <span id="reminderCount">0</span>  
+      </div>  
+    </div>
+
+    <!-- RIGHT: Services + links -->  
+    <div class="card">  
+      <h3>Runtime Status (manual or later automatic)</h3>  
+      <table class="grid" id="serviceGrid">  
+        <thead>  
+          <tr>  
+            <th>Service/Tool</th>  
+            <th class="col-status">Status</th>  
+          </tr>  
+        </thead>  
+        <tbody></tbody>  
+      </table>
+
+      <div class="meta" style="margin-top:12px;">  
+        <div style="margin-bottom:6px;"><strong>Quick Links</strong></div>  
+        <div class="links">  
+          <a href="http://localhost:15672" target="_blank" rel="noreferrer">RabbitMQ UI</a>  
+          <a href="http://localhost:8080/swagger" target="_blank" rel="noreferrer">Swagger</a>  
+          <a href="http://localhost:8080/actuator/health" target="_blank" rel="noreferrer">Health</a>  
+        </div>  
+        <div class="meta">  
+          Tip: Automatic checks require an HTTP health endpoint per service (or a small local "status API").  
+        </div>  
+      </div>  
+    </div>  
+  </div>
+
+<script>  
+  const LS_KEY = "local_dev_dashboard_v1";
+
+  const reminderStatusOptions = ["Pending", "Applied", "Verified", "Reverted", "Not Needed"];  
+  const serviceStatusOptions  = ["Unknown", "Running", "Stopped", "Error"];
+
+  // Default reminders (edit to match your real environment)  
+  const defaultState = {  
+    reminders: [  
+      { id: "hosts",   checked: false, title: "hosts file updated", remark: "Added local DNS entries", status: "Pending" },  
+      { id: "proxy",   checked: false, title: "SwitchyOmega proxy mode", remark: "Proxy ON/OFF correct", status: "Pending" },  
+      { id: "fiddler", checked: false, title: "Fiddler rules loaded", remark: "Capture ON + rules enabled", status: "Pending" },  
+      { id: "env",     checked: false, title: "Local env vars / config", remark: "Correct .env / appsettings / profile", status: "Pending" },  
+      { id: "cert",    checked: false, title: "Local certificate/trust", remark: "HTTPS cert trusted if needed", status: "Pending" }  
+    ],  
+    services: [  
+      { id: "svc-a", name: "Microservice A", status: "Unknown" },  
+      { id: "svc-b", name: "Microservice B", status: "Unknown" },  
+      { id: "rabbit", name: "RabbitMQ", status: "Unknown" },  
+      { id: "redis",  name: "Redis", status: "Unknown" }  
+    ],  
+    lastSavedIso: null  
+  };
+
+  function loadState() {  
+    try {  
+      const raw = localStorage.getItem(LS_KEY);  
+      if (!raw) return structuredClone(defaultState);  
+      const parsed = JSON.parse(raw);  
+      return { ...structuredClone(defaultState), ...parsed };  
+    } catch (e) {  
+      return structuredClone(defaultState);  
+    }  
+  }
+
+  function saveState(state) {  
+    state.lastSavedIso = new Date().toISOString();  
+    localStorage.setItem(LS_KEY, JSON.stringify(state));  
+    updateLastSaved(state.lastSavedIso);  
+  }
+
+  function updateLastSaved(iso) {  
+    if (!iso) { $("#lastSaved").text("Last saved: —").removeClass("ok warn"); return; }  
+    const d = new Date(iso);  
+    $("#lastSaved").text("Last saved: " + d.toLocaleString());  
+  }
+
+  function renderReminderGrid(state) {  
+    const $tb = $("#reminderGrid tbody").empty();
+
+    state.reminders.forEach(r => {  
+      const opts = reminderStatusOptions.map(s => `<option value="${s}">${s}</option>`).join("");
+
+      const $tr = $(`  
+        <tr data-id="${r.id}">  
+          <td class="col-check"><input type="checkbox" class="r-check"></td>  
+          <td><input type="text" class="r-title"></td>  
+          <td><input type="text" class="r-remark"></td>  
+          <td class="col-status">  
+            <select class="r-status">${opts}</select>  
+          </td>  
+        </tr>  
+      `);
+
+      $tr.find(".r-check").prop("checked", !!r.checked);  
+      $tr.find(".r-title").val(r.title);  
+      $tr.find(".r-remark").val(r.remark);  
+      $tr.find(".r-status").val(r.status);
+
+      $tb.append($tr);  
+    });
+
+    $("#reminderCount").text(state.reminders.length);  
+  }
+
+  function renderServiceGrid(state) {  
+    const $tb = $("#serviceGrid tbody").empty();
+
+    state.services.forEach(svc => {  
+      const opts = serviceStatusOptions.map(s => `<option value="${s}">${s}</option>`).join("");  
+      const $tr = $(`  
+        <tr data-id="${svc.id}">  
+          <td>${svc.name}</td>  
+          <td class="col-status"><select class="s-status">${opts}</select></td>  
+        </tr>  
+      `);  
+      $tr.find(".s-status").val(svc.status);  
+      $tb.append($tr);  
+    });  
+  }
+
+  function wireEvents(state) {  
+    // Reminders change handler  
+    $("#reminderGrid").on("change input", ".r-check, .r-title, .r-remark, .r-status", function() {  
+      const $tr = $(this).closest("tr");  
+      const id = $tr.data("id");
+
+      const idx = state.reminders.findIndex(x => x.id === id);  
+      if (idx < 0) return;
+
+      state.reminders[idx] = {  
+        id,  
+        checked: $tr.find(".r-check").is(":checked"),  
+        title: $tr.find(".r-title").val(),  
+        remark: $tr.find(".r-remark").val(),  
+        status: $tr.find(".r-status").val()  
+      };
+
+      saveState(state);  
+    });
+
+    // Services change handler  
+    $("#serviceGrid").on("change", ".s-status", function() {  
+      const $tr = $(this).closest("tr");  
+      const id = $tr.data("id");  
+      const idx = state.services.findIndex(x => x.id === id);  
+      if (idx < 0) return;
+
+      state.services[idx].status = $tr.find(".s-status").val();  
+      saveState(state);  
+    });
+
+    $("#btnRefresh").on("click", function() {  
+      // "Refresh" here means: reload from localStorage + re-render  
+      const fresh = loadState();  
+      state.reminders = fresh.reminders;  
+      state.services = fresh.services;  
+      state.lastSavedIso = fresh.lastSavedIso;
+
+      renderReminderGrid(state);  
+      renderServiceGrid(state);  
+      updateLastSaved(state.lastSavedIso);  
+    });
+
+    $("#btnReset").on("click", function() {  
+      localStorage.removeItem(LS_KEY);  
+      const fresh = structuredClone(defaultState);  
+      state.reminders = fresh.reminders;  
+      state.services = fresh.services;  
+      state.lastSavedIso = null;
+
+      renderReminderGrid(state);  
+      renderServiceGrid(state);  
+      updateLastSaved(state.lastSavedIso);  
+    });  
+  }
+
+  $(function() {  
+    const state = loadState();  
+    renderReminderGrid(state);  
+    renderServiceGrid(state);  
+    updateLastSaved(state.lastSavedIso);  
+    wireEvents(state);  
+  });  
+</script>  
+</body>  
+</html>  

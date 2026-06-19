@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plot Investment DP + Loan Calculator</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <style>
+    body {
+      background: #f5f7fb;
+    }
+
+    .app-card {
+      border: 0;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6c757d;
+      font-weight: 700;
+    }
+
+    .result-card {
+      border-radius: 16px;
+      border: 1px solid #e6e9f0;
+      background: #fff;
+    }
+
+    .metric-label {
+      color: #6c757d;
+      font-size: 0.85rem;
+    }
+
+    .metric-value {
+      font-size: 1.18rem;
+      font-weight: 700;
+    }
+
+    .small-muted {
+      color: #6c757d;
+      font-size: 0.83rem;
+    }
+
+    .positive {
+      color: #198754;
+    }
+
+    .negative {
+      color: #dc3545;
+    }
+
+    .badge-soft {
+      background: #eef4ff;
+      color: #0d6efd;
+      border: 1px solid #d7e7ff;
+    }
+
+    .input-group-text {
+      min-width: 46px;
+      justify-content: center;
+    }
+
+    .table th {
+      white-space: nowrap;
+    }
+
+    .footer-note {
+      font-size: 0.82rem;
+      color: #6c757d;
+    }
+
+    .mode-box {
+      border: 1px solid #e6e9f0;
+      border-radius: 14px;
+      padding: 14px;
+      background: #ffffff;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container py-4 py-lg-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-12">
+
+      <div class="mb-4 text-center">
+        <h1 class="fw-bold mb-2">Plot Investment Calculator with DP + Loan</h1>
+        <p class="text-muted mb-0">
+          Estimate resale value, EMI, loan balance, net profit, cash-on-cash return and break-even rate.
+        </p>
+      </div>
+
+      <div class="card app-card mb-4">
+        <div class="card-body p-4">
+
+          <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+              <div class="section-title">Basic Investment</div>
+              <h4 class="mb-0">Plot Purchase Inputs</h4>
+            </div>
+            <span class="badge rounded-pill badge-soft px-3 py-2">Base date: June 2026</span>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Plot Size</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="plotSize" value="100" min="1">
+                <span class="input-group-text">sq yd</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Current Price / sq. yd.</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" class="form-control" id="pricePerSqYd" value="20000" min="0" step="100">
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Stamp Duty + Registration</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="stampDutyPct" value="7" min="0" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Buying Cost / Legal / Misc.</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="buyCostPct" value="1" min="0" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="section-title mb-2">Funding Mode</div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="mode-box h-100">
+                <label class="form-label">Purchase Mode</label>
+                <select class="form-select" id="purchaseMode">
+                  <option value="loan" selected>DP + Loan</option>
+                  <option value="cash">Full Cash Purchase</option>
+                </select>
+                <div class="small-muted mt-2">
+                  Loan mode calculates EMI, principal repaid, interest paid, and loan outstanding.
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-8" id="loanInputs">
+              <div class="mode-box">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label">Down Payment</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="downPaymentPct" value="25" min="0" max="100" step="1">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Loan Interest Rate</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="loanRatePct" value="9.5" min="0" step="0.1">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Loan Tenure</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="loanTenureYears" value="15" min="1" step="1">
+                      <span class="input-group-text">yrs</span>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Foreclosure Charge</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="foreclosurePct" value="0" min="0" step="0.1">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Selling Cost / Brokerage</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="sellCostPct" value="1" min="0" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Maintenance / Holding Cost per Month</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" class="form-control" id="monthlyHoldingCost" value="0" min="0" step="100">
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Target Resale Rate</label>
+              <div class="input-group">
+                <span class="input-group-text">₹</span>
+                <input type="number" class="form-control" id="targetRate" value="28000" min="0" step="100">
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Target Holding Period</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="targetMonths" value="36" min="1" step="1">
+                <span class="input-group-text">mo</span>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="section-title mb-2">CAGR Scenarios</div>
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Conservative CAGR</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="cagr1" value="8" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Base CAGR</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="cagr2" value="12" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Optimistic CAGR</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="cagr3" value="15" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Aggressive CAGR</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="cagr4" value="20" step="0.1">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-4">
+            <button class="btn btn-primary px-4" onclick="calculateInvestment()">Calculate</button>
+            <button class="btn btn-outline-secondary" onclick="resetDefaults()">Reset</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4" id="summaryCards"></div>
+
+      <div class="card app-card mb-4">
+        <div class="card-body p-4">
+          <div class="section-title">Projection</div>
+          <h4 class="mb-3">12 / 24 / 36 Month Resale Projection</h4>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Scenario</th>
+                  <th>CAGR</th>
+                  <th>Period</th>
+                  <th>Resale Rate</th>
+                  <th>Gross Resale</th>
+                  <th>Net Sale After Cost</th>
+                  <th>EMI Paid</th>
+                  <th>Interest Paid</th>
+                  <th>Loan Outstanding</th>
+                  <th>Final Cash Received</th>
+                  <th>Cash Invested</th>
+                  <th>Net Profit</th>
+                  <th>Cash ROI</th>
+                  <th>Annualized Cash ROI</th>
+                </tr>
+              </thead>
+              <tbody id="projectionBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card app-card mb-4">
+        <div class="card-body p-4">
+          <div class="section-title">Target Analysis</div>
+          <h4 class="mb-3">Custom Target Resale Rate</h4>
+          <div class="row g-3" id="targetAnalysis"></div>
+        </div>
+      </div>
+
+      <div class="alert alert-warning footer-note">
+        <strong>Important:</strong>
+        Loan on plot depends on bank policy, title, location, approvals, and project status.
+        This calculator estimates financial outcomes only. It does not confirm loan eligibility,
+        legal validity, tax treatment, or actual resale liquidity.
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function getNumber(id) {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    const value = parseFloat(el.value);
+    return isNaN(value) ? 0 : value;
+  }
+
+  function formatINR(value) {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  function formatNumber(value) {
+    return new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  function formatPct(value) {
+    if (!isFinite(value)) return '0.00%';
+    return `${value.toFixed(2)}%`;
+  }
+
+  function getProfitClass(value) {
+    return value >= 0 ? 'positive' : 'negative';
+  }
+
+  function futureValue(presentValue, cagrPct, months) {
+    const years = months / 12;
+    return presentValue * Math.pow(1 + cagrPct / 100, years);
+  }
+
+  function monthlyEMI(principal, annualRatePct, tenureYears) {
+    const monthlyRate = annualRatePct / 12 / 100;
+    const totalMonths = tenureYears * 12;
+
+    if (principal <= 0) return 0;
+    if (monthlyRate === 0) return principal / totalMonths;
+
+    return principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths) /
+      (Math.pow(1 + monthlyRate, totalMonths) - 1);
+  }
+
+  function loanBalance(principal, annualRatePct, tenureYears, paidMonths) {
+    const monthlyRate = annualRatePct / 12 / 100;
+    const totalMonths = tenureYears * 12;
+    const emi = monthlyEMI(principal, annualRatePct, tenureYears);
+
+    if (principal <= 0) return 0;
+
+    if (paidMonths >= totalMonths) return 0;
+
+    if (monthlyRate === 0) {
+      return Math.max(0, principal - emi * paidMonths);
+    }
+
+    const balance =
+      principal * Math.pow(1 + monthlyRate, paidMonths) -
+      emi * ((Math.pow(1 + monthlyRate, paidMonths) - 1) / monthlyRate);
+
+    return Math.max(0, balance);
+  }
+
+  function annualizedReturn(totalReturnPct, months) {
+    const years = months / 12;
+    if (years <= 0) return 0;
+    return (Math.pow(1 + totalReturnPct / 100, 1 / years) - 1) * 100;
+  }
+
+  function requiredCAGR(presentValue, futureValueAmount, months) {
+    const years = months / 12;
+    if (presentValue <= 0 || futureValueAmount <= 0 || years <= 0) return 0;
+    return (Math.pow(futureValueAmount / presentValue, 1 / years) - 1) * 100;
+  }
+
+  function calculateInvestment() {
+    const mode = document.getElementById('purchaseMode').value;
+
+    const plotSize = getNumber('plotSize');
+    const pricePerSqYd = getNumber('pricePerSqYd');
+    const stampDutyPct = getNumber('stampDutyPct');
+    const buyCostPct = getNumber('buyCostPct');
+    const sellCostPct = getNumber('sellCostPct');
+    const monthlyHoldingCost = getNumber('monthlyHoldingCost');
+
+    const downPaymentPct = mode === 'loan' ? getNumber('downPaymentPct') : 100;
+    const loanRatePct = mode === 'loan' ? getNumber('loanRatePct') : 0;
+    const loanTenureYears = mode === 'loan' ? getNumber('loanTenureYears') : 1;
+    const foreclosurePct = mode === 'loan' ? getNumber('foreclosurePct') : 0;
+
+    const targetRate = getNumber('targetRate');
+    const targetMonths = getNumber('targetMonths');
+
+    const cagrs = [
+      { name: 'Conservative', value: getNumber('cagr1') },
+      { name: 'Base', value: getNumber('cagr2') },
+      { name: 'Optimistic', value: getNumber('cagr3') },
+      { name: 'Aggressive', value: getNumber('cagr4') }
+    ];
+
+    const periods = [12, 24, 36];
+
+    const basicPurchaseValue = plotSize * pricePerSqYd;
+    const stampDutyCost = basicPurchaseValue * stampDutyPct / 100;
+    const buyingCost = basicPurchaseValue * buyCostPct / 100;
+
+    const downPaymentAmount = basicPurchaseValue * downPaymentPct / 100;
+    const loanAmount = Math.max(0, basicPurchaseValue - downPaymentAmount);
+
+    const emi = mode === 'loan'
+      ? monthlyEMI(loanAmount, loanRatePct, loanTenureYears)
+      : 0;
+
+    const upfrontCash = downPaymentAmount + stampDutyCost + buyingCost;
+
+    renderSummary({
+      mode,
+      basicPurchaseValue,
+      stampDutyCost,
+      buyingCost,
+      downPaymentAmount,
+      loanAmount,
+      emi,
+      upfrontCash
+    });
+
+    renderProjection({
+      mode,
+      cagrs,
+      periods,
+      plotSize,
+      pricePerSqYd,
+      sellCostPct,
+      monthlyHoldingCost,
+      loanAmount,
+      loanRatePct,
+      loanTenureYears,
+      foreclosurePct,
+      emi,
+      upfrontCash
+    });
+
+    renderTarget({
+      mode,
+      plotSize,
+      targetRate,
+      targetMonths,
+      sellCostPct,
+      monthlyHoldingCost,
+      basicPurchaseValue,
+      loanAmount,
+      loanRatePct,
+      loanTenureYears,
+      foreclosurePct,
+      emi,
+      upfrontCash
+    });
+  }
+
+  function renderSummary(data) {
+    const html = `
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Basic Plot Value</div>
+          <div class="metric-value">${formatINR(data.basicPurchaseValue)}</div>
+          <div class="small-muted">Plot price before costs</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Upfront Cash Needed</div>
+          <div class="metric-value">${formatINR(data.upfrontCash)}</div>
+          <div class="small-muted">DP + stamp duty + buying costs</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Loan Amount</div>
+          <div class="metric-value">${formatINR(data.loanAmount)}</div>
+          <div class="small-muted">${data.mode === 'loan' ? 'Funded by bank/NBFC' : 'No loan in cash mode'}</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Estimated EMI</div>
+          <div class="metric-value">${formatINR(data.emi)}</div>
+          <div class="small-muted">Monthly EMI in loan mode</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('summaryCards').innerHTML = html;
+  }
+
+  function renderProjection(config) {
+    let html = '';
+
+    config.cagrs.forEach(scenario => {
+      config.periods.forEach(months => {
+        const resaleRate = futureValue(config.pricePerSqYd, scenario.value, months);
+        const grossResale = resaleRate * config.plotSize;
+
+        const sellingCost = grossResale * config.sellCostPct / 100;
+        const netSaleAfterCost = grossResale - sellingCost;
+
+        const totalEmiPaid = config.emi * months;
+        const balance = config.mode === 'loan'
+          ? loanBalance(config.loanAmount, config.loanRatePct, config.loanTenureYears, months)
+          : 0;
+
+        const principalRepaid = config.loanAmount - balance;
+        const interestPaid = Math.max(0, totalEmiPaid - principalRepaid);
+
+        const foreclosureCharge = balance * config.foreclosurePct / 100;
+        const totalHoldingCost = config.monthlyHoldingCost * months;
+
+        const finalCashReceived = netSaleAfterCost - balance - foreclosureCharge;
+
+        const totalCashInvested =
+          config.upfrontCash +
+          totalEmiPaid +
+          totalHoldingCost;
+
+        const netProfit = finalCashReceived - totalCashInvested;
+
+        const cashRoi = totalCashInvested > 0
+          ? netProfit / totalCashInvested * 100
+          : 0;
+
+        const annualizedCashRoi = annualizedReturn(cashRoi, months);
+
+        html += `
+          <tr>
+            <td><strong>${scenario.name}</strong></td>
+            <td>${formatPct(scenario.value)}</td>
+            <td>${months} mo</td>
+            <td>₹${formatNumber(resaleRate)}</td>
+            <td>${formatINR(grossResale)}</td>
+            <td>${formatINR(netSaleAfterCost)}</td>
+            <td>${formatINR(totalEmiPaid)}</td>
+            <td>${formatINR(interestPaid)}</td>
+            <td>${formatINR(balance)}</td>
+            <td>${formatINR(finalCashReceived)}</td>
+            <td>${formatINR(totalCashInvested)}</td>
+            <td class="${getProfitClass(netProfit)}"><strong>${formatINR(netProfit)}</strong></td>
+            <td class="${getProfitClass(cashRoi)}"><strong>${formatPct(cashRoi)}</strong></td>
+            <td class="${getProfitClass(annualizedCashRoi)}"><strong>${formatPct(annualizedCashRoi)}</strong></td>
+          </tr>
+        `;
+      });
+    });
+
+    document.getElementById('projectionBody').innerHTML = html;
+  }
+
+  function renderTarget(config) {
+    const grossResale = config.plotSize * config.targetRate;
+    const sellingCost = grossResale * config.sellCostPct / 100;
+    const netSaleAfterCost = grossResale - sellingCost;
+
+    const totalEmiPaid = config.emi * config.targetMonths;
+    const balance = config.mode === 'loan'
+      ? loanBalance(config.loanAmount, config.loanRatePct, config.loanTenureYears, config.targetMonths)
+      : 0;
+
+    const principalRepaid = config.loanAmount - balance;
+    const interestPaid = Math.max(0, totalEmiPaid - principalRepaid);
+    const foreclosureCharge = balance * config.foreclosurePct / 100;
+    const totalHoldingCost = config.monthlyHoldingCost * config.targetMonths;
+
+    const finalCashReceived = netSaleAfterCost - balance - foreclosureCharge;
+
+    const totalCashInvested =
+      config.upfrontCash +
+      totalEmiPaid +
+      totalHoldingCost;
+
+    const netProfit = finalCashReceived - totalCashInvested;
+
+    const cashRoi = totalCashInvested > 0
+      ? netProfit / totalCashInvested * 100
+      : 0;
+
+    const annualizedCashRoi = annualizedReturn(cashRoi, config.targetMonths);
+
+    const grossRequiredCAGR = requiredCAGR(
+      config.basicPurchaseValue,
+      grossResale,
+      config.targetMonths
+    );
+
+    const html = `
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Target Gross Resale</div>
+          <div class="metric-value">${formatINR(grossResale)}</div>
+          <div class="small-muted">At ₹${formatNumber(config.targetRate)} / sq. yd.</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Final Cash Received</div>
+          <div class="metric-value">${formatINR(finalCashReceived)}</div>
+          <div class="small-muted">After selling cost and loan closure</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Net Profit</div>
+          <div class="metric-value ${getProfitClass(netProfit)}">${formatINR(netProfit)}</div>
+          <div class="small-muted">Against all cash outflows</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="result-card p-3 h-100">
+          <div class="metric-label">Cash ROI</div>
+          <div class="metric-value ${getProfitClass(cashRoi)}">${formatPct(cashRoi)}</div>
+          <div class="small-muted">Annualized: ${formatPct(annualizedCashRoi)}</div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="alert alert-info mb-0">
+          Target resale rate of <strong>₹${formatNumber(config.targetRate)} / sq. yd.</strong>
+          in <strong>${config.targetMonths} months</strong> requires gross price CAGR of approximately
+          <strong>${formatPct(grossRequiredCAGR)}</strong>.
+          Total EMI paid: <strong>${formatINR(totalEmiPaid)}</strong>,
+          interest paid: <strong>${formatINR(interestPaid)}</strong>,
+          estimated loan outstanding: <strong>${formatINR(balance)}</strong>.
+        </div>
+      </div>
+    `;
+
+    document.getElementById('targetAnalysis').innerHTML = html;
+  }
+
+  function toggleLoanInputs() {
+    const mode = document.getElementById('purchaseMode').value;
+    document.getElementById('loanInputs').style.display = mode === 'loan' ? 'block' : 'none';
+  }
+
+  function resetDefaults() {
+    document.getElementById('plotSize').value = 100;
+    document.getElementById('pricePerSqYd').value = 20000;
+    document.getElementById('stampDutyPct').value = 7;
+    document.getElementById('buyCostPct').value = 1;
+    document.getElementById('purchaseMode').value = 'loan';
+    document.getElementById('downPaymentPct').value = 25;
+    document.getElementById('loanRatePct').value = 9.5;
+    document.getElementById('loanTenureYears').value = 15;
+    document.getElementById('foreclosurePct').value = 0;
+    document.getElementById('sellCostPct').value = 1;
+    document.getElementById('monthlyHoldingCost').value = 0;
+    document.getElementById('targetRate').value = 28000;
+    document.getElementById('targetMonths').value = 36;
+    document.getElementById('cagr1').value = 8;
+    document.getElementById('cagr2').value = 12;
+    document.getElementById('cagr3').value = 15;
+    document.getElementById('cagr4').value = 20;
+
+    toggleLoanInputs();
+    calculateInvestment();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    toggleLoanInputs();
+    calculateInvestment();
+
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', function () {
+        toggleLoanInputs();
+        calculateInvestment();
+      });
+
+      el.addEventListener('change', function () {
+        toggleLoanInputs();
+        calculateInvestment();
+      });
+    });
+  });
+</script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+</body>
+</html>

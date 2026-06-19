@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jaipur Plot Investment CAGR Calculator</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <style>
+    body {
+      background: #f5f7fb;
+    }
+
+    .app-card {
+      border: 0;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6c757d;
+      font-weight: 700;
+    }
+
+    .result-card {
+      border-radius: 16px;
+      border: 1px solid #e6e9f0;
+      background: #ffffff;
+    }
+
+    .metric-label {
+      color: #6c757d;
+      font-size: 0.85rem;
+    }
+
+    .metric-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .small-muted {
+      color: #6c757d;
+      font-size: 0.85rem;
+    }
+
+    .table th {
+      white-space: nowrap;
+    }
+
+    .positive {
+      color: #198754;
+    }
+
+    .negative {
+      color: #dc3545;
+    }
+
+    .badge-soft {
+      background: #eef4ff;
+      color: #0d6efd;
+      border: 1px solid #d7e7ff;
+    }
+
+    .input-group-text {
+      min-width: 46px;
+      justify-content: center;
+    }
+
+    .footer-note {
+      font-size: 0.82rem;
+      color: #6c757d;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4 py-lg-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-xl-11">
+
+        <div class="mb-4 text-center">
+          <h1 class="fw-bold mb-2">Plot Investment CAGR Calculator</h1>
+          <p class="text-muted mb-0">
+            Smart calculator for 100 sq. yd. plot investment in Jaipur / Mahindra SEZ area
+          </p>
+        </div>
+
+        <div class="card app-card mb-4">
+          <div class="card-body p-4">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <div>
+                <div class="section-title">Input Parameters</div>
+                <h4 class="mb-0">Investment Assumptions</h4>
+              </div>
+              <span class="badge rounded-pill badge-soft px-3 py-2">
+                Base date: June 2026
+              </span>
+            </div>
+
+            <div class="row g-3">
+
+              <div class="col-md-4">
+                <label class="form-label">Plot Size</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="plotSize" value="100" min="1" step="1">
+                  <span class="input-group-text">sq yd</span>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Current Price per sq. yd.</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="pricePerSqYd" value="20000" min="0" step="100">
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Custom Target Resale Rate</label>
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control" id="targetRate" value="28000" min="0" step="100">
+                  <span class="input-group-text">/ yd</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Stamp Duty + Registration</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="stampDutyPct" value="7" min="0" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Buying Brokerage / Legal</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="buyCostPct" value="1" min="0" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Selling Cost / Brokerage</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="sellCostPct" value="1" min="0" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Holding Period for Target CAGR</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="targetMonths" value="36" min="1" step="1">
+                  <span class="input-group-text">mo</span>
+                </div>
+              </div>
+
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="section-title mb-2">CAGR Scenarios</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Conservative CAGR</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="cagr1" value="8" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Base CAGR</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="cagr2" value="12" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Optimistic CAGR</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="cagr3" value="15" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Aggressive CAGR</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="cagr4" value="20" step="0.1">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-4">
+              <button class="btn btn-primary px-4" onclick="calculateInvestment()">
+                Calculate
+              </button>
+              <button class="btn btn-outline-secondary" onclick="resetDefaults()">
+                Reset Defaults
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4" id="summaryCards"></div>
+
+        <div class="card app-card mb-4">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <div>
+                <div class="section-title">Projection Table</div>
+                <h4 class="mb-0">12 / 24 / 36 Month Resale Estimate</h4>
+              </div>
+              <span class="small-muted">Future Value = Present Value × (1 + CAGR) ^ Years</span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Scenario</th>
+                    <th>CAGR</th>
+                    <th>Period</th>
+                    <th>Resale Rate / sq. yd.</th>
+                    <th>Gross Resale Value</th>
+                    <th>Selling Cost</th>
+                    <th>Net Sale Proceeds</th>
+                    <th>Net Profit</th>
+                    <th>Net ROI</th>
+                  </tr>
+                </thead>
+                <tbody id="projectionBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card app-card mb-4">
+          <div class="card-body p-4">
+            <div class="section-title">Target Analysis</div>
+            <h4 class="mb-3">Custom Target Resale Rate Analysis</h4>
+
+            <div class="row g-3" id="targetAnalysis"></div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning footer-note">
+          <strong>Disclaimer:</strong>
+          This is only a financial estimate calculator. Actual resale value depends on title clarity,
+          JDA/RERA/project approvals, road width, corner/park-facing status, possession status, local demand,
+          brokerage, taxation, liquidity, and market conditions. Please verify legal documents and current market
+          rates before investing.
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getNumber(id) {
+      const value = parseFloat(document.getElementById(id).value);
+      return isNaN(value) ? 0 : value;
+    }
+
+    function formatINR(value) {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0
+      }).format(value);
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat('en-IN', {
+        maximumFractionDigits: 0
+      }).format(value);
+    }
+
+    function formatPct(value) {
+      return `${value.toFixed(2)}%`;
+    }
+
+    function getProfitClass(value) {
+      return value >= 0 ? 'positive' : 'negative';
+    }
+
+    function calculateFutureValue(presentValue, cagrPct, months) {
+      const years = months / 12;
+      return presentValue * Math.pow(1 + cagrPct / 100, years);
+    }
+
+    function calculateRequiredCAGR(presentValue, futureValue, months) {
+      const years = months / 12;
+      if (presentValue <= 0 || futureValue <= 0 || years <= 0) return 0;
+      return (Math.pow(futureValue / presentValue, 1 / years) - 1) * 100;
+    }
+
+    function calculateInvestment() {
+      const plotSize = getNumber('plotSize');
+      const pricePerSqYd = getNumber('pricePerSqYd');
+      const targetRate = getNumber('targetRate');
+      const stampDutyPct = getNumber('stampDutyPct');
+      const buyCostPct = getNumber('buyCostPct');
+      const sellCostPct = getNumber('sellCostPct');
+      const targetMonths = getNumber('targetMonths');
+
+      const cagrs = [
+        { name: 'Conservative', value: getNumber('cagr1') },
+        { name: 'Base', value: getNumber('cagr2') },
+        { name: 'Optimistic', value: getNumber('cagr3') },
+        { name: 'Aggressive', value: getNumber('cagr4') }
+      ];
+
+      const periods = [12, 24, 36];
+
+      const basicPurchaseValue = plotSize * pricePerSqYd;
+      const stampDutyCost = basicPurchaseValue * stampDutyPct / 100;
+      const buyingCost = basicPurchaseValue * buyCostPct / 100;
+      const totalAcquisitionCost = basicPurchaseValue + stampDutyCost + buyingCost;
+
+      const breakEvenGrossSaleValue = totalAcquisitionCost / (1 - sellCostPct / 100);
+      const breakEvenRate = plotSize > 0 ? breakEvenGrossSaleValue / plotSize : 0;
+
+      renderSummaryCards({
+        basicPurchaseValue,
+        stampDutyCost,
+        buyingCost,
+        totalAcquisitionCost,
+        breakEvenRate,
+        breakEvenGrossSaleValue
+      });
+
+      renderProjectionTable({
+        cagrs,
+        periods,
+        plotSize,
+        pricePerSqYd,
+        basicPurchaseValue,
+        totalAcquisitionCost,
+        sellCostPct
+      });
+
+      renderTargetAnalysis({
+        plotSize,
+        targetRate,
+        targetMonths,
+        totalAcquisitionCost,
+        basicPurchaseValue,
+        sellCostPct
+      });
+    }
+
+    function renderSummaryCards(data) {
+      const html = `
+        <div class="col-md-4">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Basic Plot Value</div>
+            <div class="metric-value">${formatINR(data.basicPurchaseValue)}</div>
+            <div class="small-muted">Before stamp duty and other costs</div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Total Acquisition Cost</div>
+            <div class="metric-value">${formatINR(data.totalAcquisitionCost)}</div>
+            <div class="small-muted">
+              Stamp duty: ${formatINR(data.stampDutyCost)} |
+              Buying cost: ${formatINR(data.buyingCost)}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Break-even Resale Rate</div>
+            <div class="metric-value">${formatINR(data.breakEvenRate)} / sq. yd.</div>
+            <div class="small-muted">
+              Gross sale needed: ${formatINR(data.breakEvenGrossSaleValue)}
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('summaryCards').innerHTML = html;
+    }
+
+    function renderProjectionTable(config) {
+      let html = '';
+
+      config.cagrs.forEach(scenario => {
+        config.periods.forEach(months => {
+          const resaleRate = calculateFutureValue(config.pricePerSqYd, scenario.value, months);
+          const grossResaleValue = resaleRate * config.plotSize;
+          const sellingCost = grossResaleValue * config.sellCostPct / 100;
+          const netSaleProceeds = grossResaleValue - sellingCost;
+          const netProfit = netSaleProceeds - config.totalAcquisitionCost;
+          const netRoi = config.totalAcquisitionCost > 0
+            ? (netProfit / config.totalAcquisitionCost) * 100
+            : 0;
+
+          html += `
+            <tr>
+              <td><strong>${scenario.name}</strong></td>
+              <td>${formatPct(scenario.value)}</td>
+              <td>${months} months</td>
+              <td>₹${formatNumber(resaleRate)}</td>
+              <td>${formatINR(grossResaleValue)}</td>
+              <td>${formatINR(sellingCost)}</td>
+              <td>${formatINR(netSaleProceeds)}</td>
+              <td class="${getProfitClass(netProfit)}"><strong>${formatINR(netProfit)}</strong></td>
+              <td class="${getProfitClass(netRoi)}"><strong>${formatPct(netRoi)}</strong></td>
+            </tr>
+          `;
+        });
+      });
+
+      document.getElementById('projectionBody').innerHTML = html;
+    }
+
+    function renderTargetAnalysis(config) {
+      const targetGrossValue = config.plotSize * config.targetRate;
+      const targetSellingCost = targetGrossValue * config.sellCostPct / 100;
+      const targetNetProceeds = targetGrossValue - targetSellingCost;
+      const targetNetProfit = targetNetProceeds - config.totalAcquisitionCost;
+
+      const targetNetRoi = config.totalAcquisitionCost > 0
+        ? targetNetProfit / config.totalAcquisitionCost * 100
+        : 0;
+
+      const requiredCagrOnBaseValue = calculateRequiredCAGR(
+        config.basicPurchaseValue,
+        targetGrossValue,
+        config.targetMonths
+      );
+
+      const requiredCagrOnTotalCost = calculateRequiredCAGR(
+        config.totalAcquisitionCost,
+        targetNetProceeds,
+        config.targetMonths
+      );
+
+      const html = `
+        <div class="col-md-3">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Target Gross Resale Value</div>
+            <div class="metric-value">${formatINR(targetGrossValue)}</div>
+            <div class="small-muted">At ₹${formatNumber(config.targetRate)} / sq. yd.</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Target Net Profit</div>
+            <div class="metric-value ${getProfitClass(targetNetProfit)}">${formatINR(targetNetProfit)}</div>
+            <div class="small-muted">After selling cost</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Target Net ROI</div>
+            <div class="metric-value ${getProfitClass(targetNetRoi)}">${formatPct(targetNetRoi)}</div>
+            <div class="small-muted">On total acquisition cost</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="result-card p-3 h-100">
+            <div class="metric-label">Required CAGR</div>
+            <div class="metric-value">${formatPct(requiredCagrOnBaseValue)}</div>
+            <div class="small-muted">
+              Gross price CAGR over ${config.targetMonths} months
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="alert alert-info mb-0">
+            To sell at <strong>₹${formatNumber(config.targetRate)} / sq. yd.</strong>
+            in <strong>${config.targetMonths} months</strong>, the gross plot price must grow at approximately
+            <strong>${formatPct(requiredCagrOnBaseValue)}</strong> CAGR from the current base price.
+            Considering total acquisition cost and selling cost, your effective required CAGR is approximately
+            <strong>${formatPct(requiredCagrOnTotalCost)}</strong>.
+          </div>
+        </div>
+      `;
+
+      document.getElementById('targetAnalysis').innerHTML = html;
+    }
+
+    function resetDefaults() {
+      document.getElementById('plotSize').value = 100;
+      document.getElementById('pricePerSqYd').value = 20000;
+      document.getElementById('targetRate').value = 28000;
+      document.getElementById('stampDutyPct').value = 7;
+      document.getElementById('buyCostPct').value = 1;
+      document.getElementById('sellCostPct').value = 1;
+      document.getElementById('targetMonths').value = 36;
+      document.getElementById('cagr1').value = 8;
+      document.getElementById('cagr2').value = 12;
+      document.getElementById('cagr3').value = 15;
+      document.getElementById('cagr4').value = 20;
+
+      calculateInvestment();
+    }
+
+    document.addEventListener('DOMContentLoaded', calculateInvestment);
+
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', calculateInvestment);
+    });
+  </script>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+  </script>
+</body>
+</html>

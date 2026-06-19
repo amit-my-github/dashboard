@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Local IIS Setup Guide for Team Access</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 24px;
+      color: #222;
+    }
+
+    h1, h2, h3 {
+      color: #1f4e79;
+    }
+
+    code {
+      background: #f4f4f4;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+    }
+
+    pre {
+      background: #f4f4f4;
+      padding: 14px;
+      border-radius: 6px;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+    }
+
+    .note {
+      background: #fff8dc;
+      border-left: 5px solid #f0ad4e;
+      padding: 12px 16px;
+      margin: 18px 0;
+    }
+
+    .success {
+      background: #e8f5e9;
+      border-left: 5px solid #4caf50;
+      padding: 12px 16px;
+      margin: 18px 0;
+    }
+
+    .warning {
+      background: #fdecea;
+      border-left: 5px solid #d9534f;
+      padding: 12px 16px;
+      margin: 18px 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 18px 0;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #e9f2fb;
+    }
+
+    .small {
+      font-size: 0.95em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Local IIS Setup Guide for Team Access</h1>
+
+  <p>
+    This guide explains how to allow other team members on the office network to access
+    the local IIS sites and APIs hosted on this development machine.
+  </p>
+
+  <div class="note">
+    <strong>Developer machine IP:</strong>
+    <code>10.99.160.175</code>
+  </div>
+
+  <h2>1. Sites hosted on this machine</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>IIS Site</th>
+        <th>Host Name</th>
+        <th>Port</th>
+        <th>Application Path</th>
+        <th>Physical Path</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>alphahmrc</td>
+        <td><code>alpha.hmrc.com</code></td>
+        <td>80</td>
+        <td><code>/</code></td>
+        <td><code>C:\inetpub\alphahmrcroot</code></td>
+      </tr>
+      <tr>
+        <td>alphahmrc API</td>
+        <td><code>alpha.hmrc.com</code></td>
+        <td>80</td>
+        <td><code>/api</code></td>
+        <td><code>C:\inetpub\hmrcstubapi</code></td>
+      </tr>
+      <tr>
+        <td>dashboard</td>
+        <td><code>alpha.dashboard.com</code></td>
+        <td>88</td>
+        <td><code>/</code></td>
+        <td><code>C:\inetpub\localopsdashboard</code></td>
+      </tr>
+      <tr>
+        <td>uktaxembeddedapp</td>
+        <td><code>dev.mtd.com</code></td>
+        <td>80</td>
+        <td><code>/</code></td>
+        <td><code>C:\inetpub\uktaxembeddedapproot</code></td>
+      </tr>
+      <tr>
+        <td>uktaxembedded app</td>
+        <td><code>dev.mtd.com</code></td>
+        <td>80</td>
+        <td><code>/uktaxembedded</code></td>
+        <td><code>C:\inetpub\uktax_embedded-app</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. IIS configuration</h2>
+
+  <p>
+    IIS site configuration is stored in:
+  </p>
+
+  <pre>C:\Windows\System32\inetsrv\config\applicationHost.config</pre>
+
+  <div class="warning">
+    <strong>Important:</strong> Open this file using an Administrator editor only.
+    Do not change folder permissions or ownership unless absolutely necessary.
+  </div>
+
+  <h3>Current IIS site configuration</h3>
+
+  <pre>&lt;site name="alphahmrc" id="2" serverAutoStart="true"&gt;
+    &lt;application path="/" applicationPool="alphahmrc"&gt;
+        &lt;virtualDirectory path="/" physicalPath="C:\inetpub\alphahmrcroot" /&gt;
+    &lt;/application&gt;
+    &lt;application path="/api" applicationPool="alphahmrc"&gt;
+        &lt;virtualDirectory path="/" physicalPath="C:\inetpub\hmrcstubapi" /&gt;
+    &lt;/application&gt;
+    &lt;bindings&gt;
+        &lt;binding protocol="http" bindingInformation="*:80:alpha.hmrc.com" /&gt;
+    &lt;/bindings&gt;
+&lt;/site&gt;
+
+&lt;site name="dashboard" id="3"&gt;
+    &lt;application path="/" applicationPool="dashboard"&gt;
+        &lt;virtualDirectory path="/" physicalPath="C:\inetpub\localopsdashboard" /&gt;
+    &lt;/application&gt;
+    &lt;bindings&gt;
+        &lt;binding protocol="http" bindingInformation="*:88:alpha.dashboard.com" /&gt;
+    &lt;/bindings&gt;
+&lt;/site&gt;
+
+&lt;site name="uktaxembeddedapp" id="4" serverAutoStart="true"&gt;
+    &lt;application path="/" applicationPool="uktaxembeddedapp"&gt;
+        &lt;virtualDirectory path="/" physicalPath="C:\inetpub\uktaxembeddedapproot" /&gt;
+    &lt;/application&gt;
+    &lt;application path="/uktaxembedded" applicationPool="uktaxembeddedapp"&gt;
+        &lt;virtualDirectory path="/" physicalPath="C:\inetpub\uktax_embedded-app" /&gt;
+    &lt;/application&gt;
+    &lt;bindings&gt;
+        &lt;binding protocol="http" bindingInformation="*:80:dev.mtd.com" /&gt;
+    &lt;/bindings&gt;
+&lt;/site&gt;</pre>
+
+  <h2>3. Recommended approach</h2>
+
+  <p>
+    Because multiple sites are using port <code>80</code>, the best approach is to keep
+    hostname-based IIS bindings and ask each team member to map those hostnames to this
+    development machine IP address.
+  </p>
+
+  <div class="success">
+    <strong>Recommended:</strong> Keep IIS bindings as hostname-based bindings.
+    Team members should add hosts file entries pointing to <code>10.99.160.175</code>.
+  </div>
+
+  <h2>4. Hosts file changes for each team member</h2>
+
+  <p>
+    Each team member should edit their hosts file:
+  </p>
+
+  <pre>C:\Windows\System32\drivers\etc\hosts</pre>
+
+  <p>
+    Open Notepad as Administrator:
+  </p>
+
+  <ol>
+    <li>Click Start.</li>
+    <li>Search for <strong>Notepad</strong>.</li>
+    <li>Right-click <strong>Notepad</strong>.</li>
+    <li>Select <strong>Run as administrator</strong>.</li>
+    <li>Open <code>C:\Windows\System32\drivers\etc\hosts</code>.</li>
+    <li>Change file type from <strong>Text Documents</strong> to <strong>All Files</strong> if needed.</li>
+  </ol>
+
+  <h3>Add the following entries</h3>
+
+  <pre>10.99.160.175    alpha.hmrc.com
+10.99.160.175    alpha.dashboard.com
+10.99.160.175    dev.mtd.com</pre>
+
+  <div class="warning">
+    <strong>Important:</strong> Remove or comment out any conflicting entries such as:
+    <pre>127.0.0.1    alpha.hmrc.com
+127.0.0.1    alpha.dashboard.com
+127.0.0.1    dev.mtd.com</pre>
+  </div>
+
+  <p>
+    If keeping old entries for reference, comment them using <code>#</code>:
+  </p>
+
+  <pre>#127.0.0.1    alpha.hmrc.com
+#127.0.0.1    alpha.dashboard.com
+#127.0.0.1    dev.mtd.com</pre>
+
+  <h2>5. Flush DNS cache</h2>
+
+  <p>
+    After changing the hosts file, run Command Prompt and execute:
+  </p>
+
+  <pre>ipconfig /flushdns</pre>
+
+  <h2>6. Test hostname resolution</h2>
+
+  <p>
+    From the team member's machine, run:
+  </p>
+
+  <pre>ping dev.mtd.com
+ping alpha.hmrc.com
+ping alpha.dashboard.com</pre>
+
+  <p>
+    Expected result:
+  </p>
+
+  <pre>Reply from 10.99.160.175</pre>
+
+  <div class="note">
+    Some office networks block ping. If ping fails, still test in browser using the URLs below.
+  </div>
+
+  <h2>7. URLs to access</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Application</th>
+        <th>URL</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>HMRC root site</td>
+        <td><code>http://alpha.hmrc.com/</code></td>
+      </tr>
+      <tr>
+        <td>HMRC stub API</td>
+        <td><code>http://alpha.hmrc.com/api</code></td>
+      </tr>
+      <tr>
+        <td>Dashboard</td>
+        <td><code>http://alpha.dashboard.com:88/</code></td>
+      </tr>
+      <tr>
+        <td>UK Tax Embedded root</td>
+        <td><code>http://dev.mtd.com/</code></td>
+      </tr>
+      <tr>
+        <td>UK Tax Embedded app</td>
+        <td><code>http://dev.mtd.com/uktaxembedded</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>8. Firewall configuration on developer machine</h2>
+
+  <p>
+    On the developer machine hosting IIS, open Command Prompt as Administrator and run:
+  </p>
+
+  <pre>netsh advfirewall firewall add rule name="IIS HTTP Port 80" dir=in action=allow protocol=TCP localport=80
+netsh advfirewall firewall add rule name="IIS HTTP Port 88" dir=in action=allow protocol=TCP localport=88</pre>
+
+  <p>
+    If using additional ports like <code>8080</code>, add:
+  </p>
+
+  <pre>netsh advfirewall firewall add rule name="IIS HTTP Port 8080" dir=in action=allow protocol=TCP localport=8080</pre>
+
+  <h2>9. Restart IIS</h2>
+
+  <p>
+    On the developer machine, run Command Prompt as Administrator:
+  </p>
+
+  <pre>iisreset</pre>
+
+  <h2>10. Check IIS is listening correctly</h2>
+
+  <p>
+    On the developer machine, run:
+  </p>
+
+  <pre>netsh http show iplisten</pre>
+
+  <p>
+    If the result is empty, that is usually fine. It means IIS listens on all IP addresses.
+  </p>
+
+  <p>
+    If it only shows <code>127.0.0.1</code>, then add the machine IP:
+  </p>
+
+  <pre>netsh http add iplisten ipaddress=10.99.160.175
+iisreset</pre>
+
+  <h2>11. Verify IIS bindings using command line</h2>
+
+  <p>
+    On the developer machine, run:
+  </p>
+
+  <pre>%windir%\system32\inetsrv\appcmd list site /text:*</pre>
+
+  <p>
+    To list applications:
+  </p>
+
+  <pre>%windir%\system32\inetsrv\appcmd list app /text:*</pre>
+
+  <p>
+    To list virtual directories and physical paths:
+  </p>
+
+  <pre>%windir%\system32\inetsrv\appcmd list vdir /text:*</pre>
+
+  <h2>12. Troubleshooting</h2>
+
+  <h3>Issue: Browser cannot open the site</h3>
+
+  <ul>
+    <li>Check the team member's hosts file has <code>10.99.160.175</code>.</li>
+    <li>Run <code>ipconfig /flushdns</code>.</li>
+    <li>Check Windows Firewall allows inbound ports <code>80</code> and <code>88</code>.</li>
+    <li>Confirm IIS is running on the developer machine.</li>
+    <li>Try accessing from the developer machine first.</li>
+  </ul>
+
+  <h3>Issue: Wrong site opens</h3>
+
+  <ul>
+    <li>Check IIS bindings in <code>applicationHost.config</code>.</li>
+    <li>Make sure each hostname is mapped correctly in hosts file.</li>
+    <li>Do not remove the hostnames from bindings if multiple sites share the same port.</li>
+  </ul>
+
+  <h3>Issue: Dashboard does not open</h3>
+
+  <p>
+    Remember dashboard uses port <code>88</code>, so the URL must include the port:
+  </p>
+
+  <pre>http://alpha.dashboard.com:88/</pre>
+
+  <h3>Issue: IP address changes</h3>
+
+  <p>
+    If the developer machine IP changes from <code>10.99.160.175</code>, all team members
+    must update their hosts file again.
+  </p>
+
+  <p>
+    Recommended long-term solution:
+  </p>
+
+  <ul>
+    <li>Ask IT for a static IP address, or</li>
+    <li>Ask IT for a DNS name pointing to the developer machine.</li>
+  </ul>
+
+  <h2>13. Quick setup summary</h2>
+
+  <h3>Developer machine</h3>
+
+  <pre>netsh advfirewall firewall add rule name="IIS HTTP Port 80" dir=in action=allow protocol=TCP localport=80
+netsh advfirewall firewall add rule name="IIS HTTP Port 88" dir=in action=allow protocol=TCP localport=88
+iisreset</pre>
+
+  <h3>Team member machine hosts file</h3>
+
+  <pre>10.99.160.175    alpha.hmrc.com
+10.99.160.175    alpha.dashboard.com
+10.99.160.175    dev.mtd.com</pre>
+
+  <h3>Team member flush DNS</h3>
+
+  <pre>ipconfig /flushdns</pre>
+
+  <h3>Access URLs</h3>
+
+  <pre>http://alpha.hmrc.com/
+http://alpha.hmrc.com/api
+http://alpha.dashboard.com:88/
+http://dev.mtd.com/
+http://dev.mtd.com/uktaxembedded</pre>
+
+  <hr />
+
+  <p class="small">
+    Document purpose: quick setup guide for accessing local IIS sites hosted on development machine
+    <code>10.99.160.175</code>.
+  </p>
+
+</body>
+</html>
