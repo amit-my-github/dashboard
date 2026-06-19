@@ -1,0 +1,2 @@
+# dashboard
+Static WebSite
