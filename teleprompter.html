@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrolling Text Player</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: #FFD500;
+    font-family: 'Poppins', 'Noto Sans Devanagari', 'Arial', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .page-wrap {
+    width: 100%;
+    max-width: 900px;
+    padding: 30px 20px;
+  }
+
+  /* ---------- Black card with scrolling text ---------- */
+  .stage {
+    position: relative;
+    background: #000;
+    border-radius: 4px;
+    height: 70vh;
+    min-height: 420px;
+    overflow: hidden;
+  }
+
+  .track {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    will-change: transform;
+  }
+
+  .line {
+    color: #fff;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.5;
+    padding: 14px 30px;
+    text-shadow:
+      -2px -2px 0 #ff2626,
+       2px -2px 0 #ff2626,
+      -2px  2px 0 #ff2626,
+       2px  2px 0 #ff2626,
+      -2px  0   0 #ff2626,
+       2px  0   0 #ff2626,
+       0   -2px 0 #ff2626,
+       0    2px 0 #ff2626;
+  }
+
+  .line.heading {
+    font-size: clamp(28px, 5vw, 48px);
+  }
+
+  .line.verse {
+    font-size: clamp(22px, 4vw, 40px);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #111;
+    color: #fff;
+    transition: transform 0.1s ease, background 0.2s ease;
+  }
+  .btn:active { transform: scale(0.95); }
+
+  .btn.play { background: #ff2626; }
+
+  .speed-group {
+    display: flex;
+    gap: 6px;
+    background: rgba(0,0,0,0.08);
+    padding: 4px;
+    border-radius: 30px;
+  }
+
+  .speed-btn {
+    border: none;
+    background: transparent;
+    color: #111;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 24px;
+    cursor: pointer;
+  }
+
+  .speed-btn.active {
+    background: #111;
+    color: #fff;
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: #6b5a00;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <div class="stage" id="stage">
+    <div class="track" id="track"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="restartBtn">Restart</button>
+    <button class="btn play" id="playPauseBtn">Pause</button>
+    <div class="speed-group" id="speedGroup">
+      <button class="speed-btn" data-speed="0.5">0.5x</button>
+      <button class="speed-btn" data-speed="1" >1x</button>
+      <button class="speed-btn" data-speed="1.5">1.5x</button>
+      <button class="speed-btn" data-speed="2">2x</button>
+    </div>
+  </div>
+
+  <p class="hint">Edit the CONTENT array in the script to change the text. Scroll speed is pixels/second × the selected multiplier.</p>
+
+</div>
+
+<script>
+/* =========================================================
+   CONTENT — everything the page displays comes from here.
+   Each item is one visual block on the scroller.
+   type: "heading" -> big single line (e.g. "दोहा")
+   type: "verse"   -> a couplet/line, rendered as its own block
+   ========================================================= */
+const CONTENT = [
+  { type: "heading", text: "दोहा" },
+  { type: "verse",   text: "जय गणेश गिरिजा सुवन, मंगल करण कृपाल।" },
+  { type: "verse",   text: "दीनन के दुख दूर करि, कीजे नाथ निहाल॥" },
+  { type: "heading", text: "चौपाई" },
+  { type: "verse",   text: "जय जय जय गणपति गणराजू।" },
+  { type: "verse",   text: "मंगल करण कलेस बिनाशन।" },
+  { type: "verse",   text: "अस्तुति करत सुनहु सुत सोई।" },
+  { type: "verse",   text: "मंगल मूल सुनहु सिय पाहीं।" }
+];
+
+/* ========================================================= */
+
+const track  = document.getElementById('track');
+const stage  = document.getElementById('stage');
+
+// Build DOM from CONTENT
+CONTENT.forEach(item => {
+  const div = document.createElement('div');
+  div.className = 'line ' + (item.type === 'heading' ? 'heading' : 'verse');
+  div.textContent = item.text;
+  track.appendChild(div);
+});
+
+let baseSpeed   = 60;   // pixels per second at 1x
+let speedMult   = 1;
+let playing     = true;
+let posY        = 0;    // current translateY offset (starts below stage, moves up)
+let lastTime    = null;
+let stageHeight = 0;
+let trackHeight = 0;
+
+function measure() {
+  stageHeight = stage.clientHeight;
+  trackHeight = track.scrollHeight;
+}
+
+function resetToStart() {
+  measure();
+  posY = stageHeight;          // text starts just below the visible area
+  track.style.transform = 'translateY(' + posY + 'px)';
+}
+
+function step(timestamp) {
+  if (lastTime === null) lastTime = timestamp;
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  if (playing) {
+    posY -= baseSpeed * speedMult * dt;
+
+    // loop back once the whole track has scrolled past the top
+    if (posY < -trackHeight) {
+      posY = stageHeight;
+    }
+    track.style.transform = 'translateY(' + posY + 'px)';
+  }
+  requestAnimationFrame(step);
+}
+
+window.addEventListener('resize', measure);
+window.addEventListener('load', () => {
+  resetToStart();
+  requestAnimationFrame(step);
+});
+
+// ---------- controls ----------
+document.getElementById('playPauseBtn').addEventListener('click', (e) => {
+  playing = !playing;
+  e.target.textContent = playing ? 'Pause' : 'Play';
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  resetToStart();
+  playing = true;
+  document.getElementById('playPauseBtn').textContent = 'Pause';
+});
+
+const speedButtons = document.querySelectorAll('.speed-btn');
+speedButtons.forEach(btn => {
+  if (parseFloat(btn.dataset.speed) === 1) btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    speedMult = parseFloat(btn.dataset.speed);
+    speedButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Net Worth Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --ink: #2c2a26;
+    --muted: #8a8578;
+    --card: #ffffff;
+    --border: #e7e3da;
+    --accent: #2f7a63;      /* soft teal-green, growth/money feel */
+    --accent-soft: #e6f2ec;
+    --accent2: #c9853f;     /* warm amber for liabilities/contrast */
+    --accent2-soft: #f7ecdd;
+    --navy: #3c4a63;        /* net worth headline */
+  }
+  body { background:var(--bg); color:var(--ink); font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; padding-bottom: 60px;}
+  .navbar { background:var(--card); border-bottom:1px solid var(--border); }
+  .navbar-brand { font-weight:700; letter-spacing:.2px; color:var(--ink) !important; }
+  .card { background:var(--card); border:1px solid var(--border); }
+  .table { color:var(--ink); }
+  .table input, .table select {
+    background:#fdfcfa; color:var(--ink); border:1px solid var(--border);
+  }
+  .table input:focus, .table select:focus {
+    background:#fff; color:var(--ink); border-color:var(--accent);
+    box-shadow: 0 0 0 .2rem rgba(47,122,99,.15);
+  }
+  .subtotal-badge { font-size:0.9rem; font-weight:600; }
+  .badge.bg-success { background-color:var(--accent) !important; }
+  .badge.bg-danger { background-color:var(--accent2) !important; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:.9rem; padding:1.1rem 1.4rem; box-shadow: 0 2px 10px rgba(60,50,30,.04); }
+  .stat-value { font-size:1.7rem; font-weight:700; }
+  #totalAssets { color:var(--accent); }
+  #totalLiabilities { color:var(--accent2); }
+  #netWorth { color:var(--navy); }
+  .btn-remove { padding:.15rem .5rem; }
+  .btn-outline-light { color:var(--ink); border-color:var(--border); }
+  .btn-outline-light:hover { background:var(--accent-soft); color:var(--ink); border-color:var(--accent); }
+  .btn-outline-danger { border-color:#e3c2b0; color:#b0562f; }
+  .btn-outline-danger:hover { background:var(--accent2-soft); }
+  .privacy-banner { background:var(--accent-soft); border:1px solid #cfe6da; color:#1f5943; border-radius:.7rem; }
+  footer { color:var(--muted); font-size:.8rem; }
+  .accordion-item { background:var(--card); border:1px solid var(--border); border-radius:.6rem !important; margin-bottom:.6rem; overflow:hidden; }
+  .accordion-button { background:var(--card); color:var(--ink); font-weight:600; }
+  .accordion-button:not(.collapsed) { background:var(--accent-soft); color:var(--ink); box-shadow:none; }
+  .accordion-button:focus { box-shadow:none; border-color:var(--border); }
+  .accordion-body { background:#fffdfa; }
+  .navbar-dark .navbar-brand, .navbar-dark .navbar-nav .nav-link { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-light px-3 py-3">
+  <span class="navbar-brand">📊 My Net Worth Dashboard</span>
+  <div class="d-flex align-items-center">
+    <div class="form-check form-switch d-flex align-items-center me-3 mb-0">
+      <input class="form-check-input me-2" type="checkbox" id="sourceToggle" style="cursor:pointer;">
+      <label class="form-check-label small" for="sourceToggle" id="sourceToggleLabel">Source: Local Storage</label>
+    </div>
+    <button class="btn btn-sm btn-outline-light me-2" id="exportBtn">Export backup</button>
+    <button class="btn btn-sm btn-outline-light me-2" id="importBtn">Import backup</button>
+    <input type="file" id="importFile" accept=".json" class="d-none">
+    <button class="btn btn-sm btn-outline-danger" id="resetBtn">Reset all</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="alert privacy-banner mb-4" role="alert">
+    🔒 All numbers you enter are saved <strong>only in this browser's local storage</strong> — never sent anywhere. The toggle above lets you switch between your live local-storage data and the static <strong>JSON backup</strong> embedded in this file, so you always have one offline copy to fall back on. Use <em>Export backup</em> for a downloadable copy — keep that file off any public repo.
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="text-secondary small">Total Assets</div>
+        <div class="stat-value text-success" id="totalAssets">₹0</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="text-secondary small">Total Liabilities</div>
+        <div class="stat-value text-danger" id="totalLiabilities">₹0</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="text-secondary small">Net Worth</div>
+        <div class="stat-value" id="netWorth">₹0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion" id="mainAccordion"></div>
+
+  <footer class="text-center mt-4">
+    Last saved: <span id="lastSaved">—</span>
+  </footer>
+
+</div>
+
+<script>
+const CATEGORIES = [
+  { id: "nps", name: "NPS (National Pension System)", cols: ["Account / PRAN", "Current Value"], type: "asset" },
+  { id: "sip", name: "SIP / Mutual Funds", cols: ["Fund Name", "Current Value"], type: "asset" },
+  { id: "fd", name: "Fixed Deposits", cols: ["Bank / Institution", "Maturity Value"], type: "asset" },
+  { id: "land", name: "Land / Real Estate", cols: ["Property / Location", "Estimated Value"], type: "asset" },
+  { id: "bank", name: "Bank / Savings", cols: ["Bank / Account", "Balance"], type: "asset" },
+  { id: "stocks", name: "Stocks / Equity", cols: ["Stock / Broker", "Current Value"], type: "asset" },
+  { id: "gold", name: "Gold / Jewellery", cols: ["Item / Form", "Estimated Value"], type: "asset" },
+  { id: "other_assets", name: "Other Assets", cols: ["Description", "Value"], type: "asset" },
+  { id: "loans", name: "Loans / Liabilities", cols: ["Loan / Lender", "Outstanding Amount"], type: "liability" },
+];
+
+const STORAGE_KEY = "netWorthDashboardData_v1";
+
+function emptyData() {
+  const initial = {};
+  CATEGORIES.forEach(c => initial[c.id] = []);
+  return initial;
+}
+
+function loadLocalData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { console.error("Load failed", e); }
+  return emptyData();
+}
+
+// Reads the static backup snapshot embedded in the <script type="application/json"> tag below.
+// This is the "offline copy" — later this can be swapped for a fetch() to a real API.
+function loadBackupData() {
+  try {
+    const el = document.getElementById("backupDataJson");
+    if (el) return JSON.parse(el.textContent);
+  } catch (e) { console.error("Backup JSON parse failed", e); }
+  return emptyData();
+}
+
+let currentSource = "local"; // "local" | "json"
+let data = loadLocalData();
+
+function saveData() {
+  // Edits always persist to local storage, regardless of which source is currently displayed.
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  document.getElementById("lastSaved").textContent = new Date().toLocaleString();
+  renderTotals();
+}
+
+function fmt(n) {
+  if (isNaN(n)) n = 0;
+  return "₹" + Number(n).toLocaleString("en-IN", {maximumFractionDigits: 0});
+}
+
+function renderTotals() {
+  let assets = 0, liabilities = 0;
+  CATEGORIES.forEach(cat => {
+    const rows = data[cat.id] || [];
+    const sum = rows.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
+    const badge = document.getElementById("subtotal-" + cat.id);
+    if (badge) badge.textContent = fmt(sum);
+    if (cat.type === "asset") assets += sum; else liabilities += sum;
+  });
+  document.getElementById("totalAssets").textContent = fmt(assets);
+  document.getElementById("totalLiabilities").textContent = fmt(liabilities);
+  document.getElementById("netWorth").textContent = fmt(assets - liabilities);
+}
+
+function addRow(catId) {
+  data[catId].push({ label: "", value: "" });
+  saveData();
+  renderCategory(catId);
+}
+
+function removeRow(catId, idx) {
+  data[catId].splice(idx, 1);
+  saveData();
+  renderCategory(catId);
+}
+
+function updateRow(catId, idx, field, val) {
+  data[catId][idx][field] = val;
+  saveData();
+}
+
+function renderCategory(catId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  const tbody = document.getElementById("tbody-" + catId);
+  tbody.innerHTML = "";
+  (data[catId] || []).forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" class="form-control form-control-sm" value="${escapeHtml(row.label)}" placeholder="${cat.cols[0]}"></td>
+      <td><input type="number" class="form-control form-control-sm" value="${row.value}" placeholder="${cat.cols[1]}"></td>
+      <td class="text-end"><button class="btn btn-sm btn-outline-danger btn-remove">✕</button></td>
+    `;
+    const [labelInput, valueInput] = tr.querySelectorAll("input");
+    labelInput.addEventListener("input", e => updateRow(catId, idx, "label", e.target.value));
+    valueInput.addEventListener("input", e => updateRow(catId, idx, "value", e.target.value));
+    tr.querySelector(".btn-remove").addEventListener("click", () => removeRow(catId, idx));
+    tbody.appendChild(tr);
+  });
+  renderTotals();
+}
+
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function buildAccordion() {
+  const acc = document.getElementById("mainAccordion");
+  acc.innerHTML = CATEGORIES.map((cat, i) => `
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button ${i===0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${cat.id}">
+          ${cat.name}
+          <span class="badge ${cat.type === 'asset' ? 'bg-success' : 'bg-danger'} ms-3 subtotal-badge" id="subtotal-${cat.id}">₹0</span>
+        </button>
+      </h2>
+      <div id="collapse-${cat.id}" class="accordion-collapse collapse ${i===0 ? 'show' : ''}" data-bs-parent="#mainAccordion">
+        <div class="accordion-body">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr><th>${cat.cols[0]}</th><th>${cat.cols[1]}</th><th></th></tr>
+            </thead>
+            <tbody id="tbody-${cat.id}"></tbody>
+          </table>
+          <button class="btn btn-sm btn-outline-light" id="add-${cat.id}">+ Add row</button>
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  CATEGORIES.forEach(cat => {
+    document.getElementById("add-" + cat.id).addEventListener("click", () => addRow(cat.id));
+    renderCategory(cat.id);
+  });
+}
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "net-worth-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("importBtn").addEventListener("click", () => {
+  document.getElementById("importFile").click();
+});
+
+document.getElementById("importFile").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      data = imported;
+      saveData();
+      buildAccordion();
+    } catch (err) {
+      alert("Invalid backup file.");
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("This will erase all locally saved data on this device. Export a backup first if needed. Continue?")) {
+    data = emptyData();
+    saveData();
+    buildAccordion();
+  }
+});
+
+document.getElementById("sourceToggle").addEventListener("change", (e) => {
+  if (e.target.checked) {
+    currentSource = "json";
+    data = loadBackupData();
+    document.getElementById("sourceToggleLabel").textContent = "Source: JSON Backup";
+  } else {
+    currentSource = "local";
+    data = loadLocalData();
+    document.getElementById("sourceToggleLabel").textContent = "Source: Local Storage";
+  }
+  buildAccordion();
+  renderTotals();
+});
+
+buildAccordion();
+renderTotals();
+if (localStorage.getItem(STORAGE_KEY)) {
+  document.getElementById("lastSaved").textContent = "loaded from this browser";
+}
+</script>
+
+<!--
+  Static backup snapshot. This is your "one JSON backup" living inside the file itself.
+  Toggle "Source: JSON Backup" above to load from here instead of local storage.
+  Edit these values by hand for now; later this can be replaced by an API call
+  (e.g. fetch('/api/net-worth') returning this same shape) without changing any other code.
+-->
+<script type="application/json" id="backupDataJson">
+{
+  "nps": [],
+  "sip": [],
+  "fd": [],
+  "land": [],
+  "bank": [],
+  "stocks": [],
+  "gold": [],
+  "other_assets": [],
+  "loans": []
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
